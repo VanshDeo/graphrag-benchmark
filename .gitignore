@@ -71,6 +71,9 @@ results/*
 !results/.gitkeep
 backend_log.txt
 *.log
+src/configs/server_config.json
+src/graphrag/config/server_config.json
+
 
 # GSD (get-shit-done) — local install & planning artifacts, never commit
 .planning/

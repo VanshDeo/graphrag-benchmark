@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def count_tokens(path: str, model_id: str = "models/gemini-2.5-flash"):
+def count_tokens(path: str, model_id: str = "models/gemma-4-26b-a4b-it"):
     """
     Count tokens in a file or directory using the GenAI SDK.
     """
@@ -59,7 +59,7 @@ def count_tokens(path: str, model_id: str = "models/gemini-2.5-flash"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Count tokens using Google GenAI SDK.")
     parser.add_argument("--path", type=str, default="data/medical/knowledge_base.txt", help="Path to file or folder.")
-    parser.add_argument("--model", type=str, default="models/gemini-2.5-flash", help="Model ID to use for tokenization.")
+    parser.add_argument("--model", type=str, default="models/gemma-4-26b-a4b-it", help="Model ID to use for tokenization.")
     
     args = parser.parse_args()
     count_tokens(args.path, args.model)

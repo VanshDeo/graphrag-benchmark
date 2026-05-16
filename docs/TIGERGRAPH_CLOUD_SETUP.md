@@ -111,7 +111,7 @@ This writes `configs/server_config.json` (also git-ignored). Re-run this script 
 **What it configures:**
 
 - **db_config:** hostname, user, password, graph name, port `443`, `getToken: true`
-- **llm_config:** Google GenAI (`genai`) for `gemini-2.5-flash` and Gemini embedding model
+- **llm_config:** Google GenAI (`genai`) for `models/gemma-4-26b-a4b-it` and Gemini embedding model
 
 ### 3. Verify Savanna connectivity (before Docker)
 
