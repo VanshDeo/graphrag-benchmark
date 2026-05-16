@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from utils.embeddings import get_pinecone_client, embed_texts
 from utils.metrics import PipelineMetrics
 from utils.retry import with_retry
+from utils.security import sanitize_error
 
 load_dotenv()
 
@@ -22,6 +23,7 @@ load_dotenv()
 _pc = None
 _index = None
 _model_id = "models/gemma-4-26b-a4b-it"
+_embed_model_id = "models/gemini-embedding-001"
 
 TOP_K = 3  # Number of chunks to retrieve (optimized for medical data)
 
@@ -107,7 +109,7 @@ def run(query: str, top_k: int = TOP_K, namespace: str = "medical-rag") -> dict:
         else:
             answer = "Error: LLM service returned an invalid response."
     except Exception as e:
-        answer = f"Error generating response: {str(e)}"
+        answer = sanitize_error(f"Error generating response: {str(e)}")
     
     metrics.record(prompt, answer, start)
     return {
@@ -201,13 +203,11 @@ async def run_stream(query: str, top_k: int = TOP_K, namespace: str = "medical-r
                         except Exception:
                             continue
     except Exception as e:
-        answer = f"Error generating response: {str(e)}"
+        answer = sanitize_error(f"Error generating response: {str(e)}")
         yield {"type": "chunk", "text": answer, "tokens": 0}
 
     metrics.prompt_tokens = prompt_tokens
     metrics.record(prompt, answer, start)
-    metrics.total_tokens = metrics.prompt_tokens + metrics.completion_tokens
-    metrics.cost_usd = metrics.total_tokens / 1_000_000 * 0.075
 
     yield {
         "type": "done",
