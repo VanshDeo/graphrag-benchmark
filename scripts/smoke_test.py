@@ -9,6 +9,11 @@ Runs 7 checks in order, printing ✅ or ❌ per check.
 import os
 import sys
 
+# Ensure UTF-8 output on Windows for emojis
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 from dotenv import load_dotenv
 
 load_dotenv()
