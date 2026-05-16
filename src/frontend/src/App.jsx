@@ -66,7 +66,10 @@ export default function App() {
     addEvent("Initializing GraphRAG Benchmark Environment...", "info");
     // Fetch knowledge base content on load
     fetch(`${API_URL}/knowledge-base`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         setKbContent(data.content || "No content found.");
         setKbTokens(data.total_tokens || 0);
