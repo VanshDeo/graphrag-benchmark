@@ -29,6 +29,8 @@ from dashboard.backend.models import (
     HealthResponse,
     IngestStatus,
     PipelineResult,
+    BenchmarkQuery,
+    BenchmarkSampleRequest,
 )
 from pipelines import pipeline1_llm_only as p1
 from pipelines.pipeline2_basic_rag import query as p2
@@ -54,6 +56,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/benchmark/questions", response_model=list[BenchmarkQuery])
+async def get_benchmark_questions():
+    """Return the full clinical benchmark suite."""
+    return BENCHMARK_QUERIES
 
 executor = ThreadPoolExecutor(max_workers=3)
 

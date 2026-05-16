@@ -29,13 +29,15 @@ import TokenChart from "./components/TokenChart";
 import SystemConsole from "./components/SystemConsole";
 import KnowledgeGraph from "./components/KnowledgeGraph";
 import ImplementationStatus from "./components/ImplementationStatus";
+import IngestionManager from "./components/IngestionManager";
+import BenchmarkRunner from "./components/BenchmarkRunner";
 
-const API_URL = "http://localhost:8080";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [groundTruth, setGroundTruth] = useState("");
   const [showGroundTruth, setShowGroundTruth] = useState(false);
+  const [groundTruth, setGroundTruth] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
@@ -621,7 +623,7 @@ export default function App() {
                               <span className="text-[10px] font-mono text-gray-600 animate-pulse uppercase tracking-widest">Hydrating_Context...</span>
                             </div>
                           ) : (
-                            <pre className="text-[11px] text-gray-500 font-mono whitespace-pre-wrap leading-relaxed selection:bg-accent-neon/30">
+                        <pre className="text-[11px] text-gray-500 font-mono whitespace-pre-wrap leading-relaxed selection:bg-accent-neon/30">
                               {kbContent}
                             </pre>
                           )}
@@ -629,6 +631,37 @@ export default function App() {
                       </div>
                     </div>
                  </aside>
+              </motion.div>
+            )}
+
+            {activeTab === "ingestion" && (
+              <motion.div
+                key="ingestion"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+              >
+                <IngestionManager 
+                  onIngestStarted={(type, msg) => {
+                    setEvents(prev => [{
+                      timestamp: new Date().toLocaleTimeString(),
+                      service: "BACKEND",
+                      message: `Pipeline ingest started [${type}]: ${msg}`,
+                      type: "info"
+                    }, ...prev]);
+                  }}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === "benchmark" && (
+              <motion.div
+                key="benchmark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+              >
+                <BenchmarkRunner />
               </motion.div>
             )}
 

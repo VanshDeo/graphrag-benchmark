@@ -10,16 +10,16 @@ import json
 import os
 import time
 from datetime import datetime
+import argparse
 
 from pipelines import pipeline1_llm_only as p1
 from pipelines.pipeline2_basic_rag import query as p2
 from pipelines.pipeline3_graphrag import query as p3
 from evaluation.accuracy import evaluate_all_pipelines
 
-# ──────────────────────────────────────────────────────────────
-# 30 medical-domain benchmark queries with ground truths
-# Symptoms, precautions, and disease definitions from the medical KB
-# ──────────────────────────────────────────────────────────────
+# --- Configuration ---
+LIGHTWEIGHT_COUNT = 5  # Total queries in lite mode
+
 
 BENCHMARK_QUERIES = [
     {
@@ -239,14 +239,29 @@ def build_clinical_benchmark() -> list[dict]:
 BENCHMARK_QUERIES = build_clinical_benchmark()
 
 
-def run_benchmark() -> str:
+def run_benchmark(is_lightweight: bool = False) -> str:
     """
-    Run the full benchmark across all 3 pipelines and 30 queries.
+    Run the full benchmark across all 3 pipelines.
+
+    Args:
+        is_lightweight: If True, only run a small subset of queries.
 
     Returns:
         Path to the saved JSON benchmark report.
     """
     os.makedirs("./results", exist_ok=True)
+
+    queries = BENCHMARK_QUERIES
+    if is_lightweight:
+        # Pick one from each category to ensure coverage
+        categories = set(q.get("category", "GENERAL") for q in queries)
+        light_queries = []
+        for cat in categories:
+            for q in queries:
+                if q.get("category", "GENERAL") == cat:
+                    light_queries.append(q)
+                    break
+        queries = light_queries[:LIGHTWEIGHT_COUNT]
 
     questions = []
     p1_answers = []
@@ -256,17 +271,17 @@ def run_benchmark() -> str:
     all_metrics = []
 
     print(f"{'='*60}")
-    print(f"  GraphRAG Inference Benchmark — {len(BENCHMARK_QUERIES)} queries")
+    print(f"  GraphRAG Inference Benchmark — {len(queries)} queries" + (" (LIGHTWEIGHT)" if is_lightweight else ""))
     print(f"{'='*60}\n")
 
-    for idx, item in enumerate(BENCHMARK_QUERIES, 1):
+    for idx, item in enumerate(queries, 1):
         query = item["question"]
         gt = item["correct_answer"]
         category = item.get("category", "GENERAL")
         questions.append(query)
         ground_truths.append(gt)
 
-        print(f"[{idx}/{len(BENCHMARK_QUERIES)}] {query[:60]}...")
+        print(f"[{idx}/{len(queries)}] {query[:60]}...")
 
         # Run all 3 pipelines
         r1 = p1.run(query)
@@ -331,7 +346,8 @@ def run_benchmark() -> str:
 
     report = {
         "generated_at": datetime.now().isoformat(),
-        "total_queries": len(BENCHMARK_QUERIES),
+        "total_queries": len(queries),
+        "is_lightweight": is_lightweight,
         "per_query_metrics": all_metrics,
         "accuracy": accuracy,
         "category_summary": category_summary,
@@ -343,13 +359,13 @@ def run_benchmark() -> str:
         "summary": {
             "avg_token_reduction_pct": round(avg_reduction, 2),
             "graphrag_judge_pass_rate": accuracy["GraphRAG"]["llm_judge"]["pass_rate"],
-            "graphrag_bertscore_f1": accuracy["GraphRAG"]["bertscore"]["f1_rescaled"],
+            "graphrag_bertscore_f1": accuracy["GraphRAG"]["bertscore"].get("f1_rescaled", 0),
             "max_bonus": accuracy["GraphRAG"]["max_bonus_achieved"],
         },
     }
 
     # ── Save report ──
-    filepath = f"./results/benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    filepath = f"./results/benchmark_{'light_' if is_lightweight else ''}{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(filepath, "w") as f:
         json.dump(report, f, indent=2)
 
@@ -369,4 +385,11 @@ def run_benchmark() -> str:
 
 
 if __name__ == "__main__":
-    run_benchmark()
+    parser = argparse.ArgumentParser(description="GraphRAG Benchmark Runner")
+    parser.add_argument("--light", action="store_true", help="Run in lightweight mode (fewer queries)")
+    args = parser.parse_args()
+
+    # Support env var as well
+    lite_mode = args.light or os.getenv("LIGHTWEIGHT", "false").lower() == "true"
+    
+    run_benchmark(is_lightweight=lite_mode)
