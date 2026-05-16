@@ -29,7 +29,7 @@ import TokenChart from "./components/TokenChart";
 import SystemConsole from "./components/SystemConsole";
 import KnowledgeGraph from "./components/KnowledgeGraph";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -61,7 +61,10 @@ export default function App() {
     addEvent("Initializing GraphRAG Benchmark Environment...", "info");
     // Fetch knowledge base content on load
     fetch(`${API_URL}/knowledge-base`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         setKbContent(data.content || "No content found.");
         setKbTokens(data.total_tokens || 0);
