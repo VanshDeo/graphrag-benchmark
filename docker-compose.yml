@@ -1,6 +1,5 @@
 services:
   graphrag:
-    platform: linux/amd64
     image: tigergraph/graphrag:latest
     ports:
       - "8000:8000"
