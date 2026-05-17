@@ -1,0 +1,121 @@
+// TigerGraph Medical Knowledge Graph Schema
+// Designed for Clinical Polypharmacy & Symptom-to-Diagnosis Reasoning
+
+CREATE GRAPH MedicalGraph ()
+
+USE GRAPH MedicalGraph
+
+// --- VERTEX TYPES ---
+
+CREATE VERTEX Drug (
+  PRIMARY_ID drug_id STRING,
+  name STRING,
+  generic_name STRING,
+  drug_class STRING,
+  half_life_hours FLOAT,
+  mechanism_of_action STRING
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Enzyme (
+  PRIMARY_ID enzyme_id STRING,
+  name STRING,
+  family STRING,
+  inducers SET<STRING>,
+  inhibitors SET<STRING>
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Adverse_Event (
+  PRIMARY_ID ae_id STRING,
+  description STRING,
+  severity STRING
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Disease (
+  PRIMARY_ID disease_id STRING,
+  name STRING,
+  icd10_code STRING,
+  prevalence_per_100k FLOAT,
+  severity_rating STRING
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Symptom (
+  PRIMARY_ID symptom_id STRING,
+  description STRING,
+  systemic BOOL,
+  severity STRING
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+CREATE VERTEX Treatment_Guideline (
+  PRIMARY_ID guideline_id STRING,
+  title STRING,
+  issuing_body STRING,
+  year INT,
+  recommendation STRING,
+  evidence_level STRING  // A/B/C
+) WITH STATS="OUTDEGREE_BY_EDGETYPE", PRIMARY_ID_AS_ATTRIBUTE="true"
+
+// --- EDGE TYPES ---
+
+CREATE DIRECTED EDGE INTERACTS_WITH (
+  FROM Drug, TO Drug,
+  severity STRING,        // mild/moderate/severe/contraindicated
+  mechanism STRING,       // pharmacokinetic/pharmacodynamic
+  effect STRING,          // increases/decreases/blocks
+  evidence_strength STRING
+) WITH REVERSE_EDGE="REVERSE_INTERACTS_WITH"
+
+CREATE DIRECTED EDGE METABOLIZED_BY (
+  FROM Drug, TO Enzyme,
+  is_substrate BOOL,
+  is_inducer BOOL,
+  is_inhibitor BOOL
+) WITH REVERSE_EDGE="REVERSE_METABOLIZED_BY"
+
+CREATE DIRECTED EDGE CAUSES (
+  FROM Drug, TO Adverse_Event,
+  frequency FLOAT,        // percentage
+  severity STRING,
+  onset_hours FLOAT
+) WITH REVERSE_EDGE="REVERSE_CAUSES"
+
+CREATE DIRECTED EDGE TREATS (
+  FROM Drug, TO Disease,
+  first_line BOOL,
+  evidence_level STRING
+) WITH REVERSE_EDGE="REVERSE_TREATS"
+
+CREATE DIRECTED EDGE CONTRAINDICATED_FOR (
+  FROM Drug, TO Disease,
+  reason STRING,
+  absolute BOOL           // absolute vs relative contraindication
+) WITH REVERSE_EDGE="REVERSE_CONTRAINDICATED_FOR"
+
+CREATE DIRECTED EDGE PRESENTS_AS (
+  FROM Disease, TO Symptom,
+  frequency FLOAT,        // how often this symptom appears
+  early_sign BOOL
+) WITH REVERSE_EDGE="REVERSE_PRESENTS_AS"
+
+CREATE DIRECTED EDGE INDICATES (
+  FROM Symptom, TO Disease,
+  specificity FLOAT,      // 0-1
+  sensitivity FLOAT
+) WITH REVERSE_EDGE="REVERSE_INDICATES"
+
+CREATE DIRECTED EDGE COMORBID_WITH (
+  FROM Disease, TO Disease,
+  correlation_strength FLOAT,
+  bidirectional BOOL
+) WITH REVERSE_EDGE="REVERSE_COMORBID_WITH"
+
+CREATE DIRECTED EDGE RECOMMENDED_BY (
+  FROM Treatment_Guideline, TO Drug,
+  for_disease STRING,
+  year INT
+) WITH REVERSE_EDGE="REVERSE_RECOMMENDED_BY"
+
+CREATE DIRECTED EDGE CONTRADICTS (
+  FROM Treatment_Guideline, TO Treatment_Guideline,
+  on_drug STRING,
+  reason STRING
+) WITH REVERSE_EDGE="REVERSE_CONTRADICTS"
